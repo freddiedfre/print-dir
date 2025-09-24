@@ -42,6 +42,23 @@ convert_to_bytes() {
     fi
 }
 
+get_file_size() {
+  local file="$1"
+  if command -v stat >/dev/null 2>&1; then
+    if stat --version >/dev/null 2>&1; then
+      # GNU stat (Linux)
+      stat -c%s "$file"
+    else
+      # BSD stat (macOS)
+      stat -f%z "$file"
+    fi
+  else
+    # fallback
+    wc -c < "$file"
+  fi
+}
+
+
 # Default Parameters
 max_depth=""
 include_pattern=""
@@ -107,7 +124,7 @@ find "${find_args[@]}" -print0 | while IFS= read -r -d '' file; do
     fi
 
     # Skip large files
-    filesize=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")
+    filesize=$(get_file_size "$file")
     [[ "$filesize" -gt "$max_size" ]] && continue
 
     # Output formatting
